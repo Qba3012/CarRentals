@@ -2,6 +2,7 @@ package objectivity.co.uk.CarsRental.controller;
 
 import lombok.RequiredArgsConstructor;
 import objectivity.co.uk.CarsRental.business.CarService;
+import objectivity.co.uk.CarsRental.business.error.CarValidationException;
 import objectivity.co.uk.CarsRental.model.Car;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;

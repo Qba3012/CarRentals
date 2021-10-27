@@ -16,11 +16,12 @@ public class Car {
     private Long id;
     private String maker;
     private String model;
-    private String color;
+    private String vin;
     private BigDecimal price;
     private Status status;
     private Set<String> features;
     private LocalDateTime createDate;
+    private LocalDateTime purchaseDate;
     private LocalDateTime updateDate;
 
 }

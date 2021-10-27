@@ -1,6 +1,7 @@
 package objectivity.co.uk.CarsRental.business;
 
 import lombok.RequiredArgsConstructor;
+import objectivity.co.uk.CarsRental.business.validation.CarValidator;
 import objectivity.co.uk.CarsRental.model.Car;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +13,11 @@ import java.util.Optional;
 public class CarServiceImpl implements CarService {
 
     private final CarRepository carRepository;
+    private final CarValidator carValidator;
 
     @Override
     public Car addCar(Car car) {
+        carValidator.validate(car);
         return carRepository.save(car);
     }
 
@@ -30,6 +33,7 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public Car updateCar(Long id, Car car) {
+        carValidator.validate(car);
         return carRepository.update(id, car);
     }
 

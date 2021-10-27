@@ -23,10 +23,12 @@ public class CarRepositoryImpl implements CarRepository {
 
     @PostConstruct
     private void initMockData() {
-        Car car1 = new Car(1L, "BMW", "E60", "black", new BigDecimal(30000), Status.AVAILABLE, Stream.of("Pasy " +
-                "bezpieczeństwa", "Kierunkowskazy", "Podświetlane logo").collect(Collectors.toSet()), LocalDateTime.now(), LocalDateTime.now());
-        Car car2 = new Car(2L, "BMW", "F10", "black", new BigDecimal(200000), Status.AVAILABLE, Stream.of("Pasy " +
-                "bezpieczeństwa", "Kierunkowskazy", "Podświetlane logo").collect(Collectors.toSet()), LocalDateTime.now(), LocalDateTime.now());
+        Car car1 = new Car(1L, "BMW", "E60", "BMW57S2021", new BigDecimal(30000), Status.AVAILABLE, Stream.of("Pasy " +
+                "bezpieczeństwa", "Kierunkowskazy", "Podświetlane logo").collect(Collectors.toSet()),
+                LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now());
+        Car car2 = new Car(2L, "BMW", "F10", "BMW56S2021", new BigDecimal(200000), Status.AVAILABLE, Stream.of("Pasy " +
+                "bezpieczeństwa", "Kierunkowskazy", "Podświetlane logo").collect(Collectors.toSet()),
+                LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now());
         this.cars = new ArrayList<>();
         this.cars.add(car1);
         this.cars.add(car2);
@@ -65,10 +67,11 @@ public class CarRepositoryImpl implements CarRepository {
             existingCar.setMaker(car.getMaker());
             existingCar.setModel(car.getModel());
             existingCar.setStatus(car.getStatus());
-            existingCar.setColor(car.getColor());
+            existingCar.setVin(car.getVin());
             existingCar.setFeatures(car.getFeatures());
             existingCar.setPrice(car.getPrice());
             existingCar.setUpdateDate(LocalDateTime.now());
+            existingCar.setPurchaseDate(car.getPurchaseDate());
             return existingCar;
         }
         return save(car);
