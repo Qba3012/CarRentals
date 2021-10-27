@@ -19,6 +19,8 @@ public class CarRepositoryImpl implements CarRepository {
 
     private List<Car> cars;
 
+    private Long idCounter = 0L;
+
     @PostConstruct
     private void initMockData() {
         Car car1 = new Car(1L, "BMW", "E60", "black", new BigDecimal(30000), Status.AVAILABLE, Stream.of("Pasy " +
@@ -28,15 +30,12 @@ public class CarRepositoryImpl implements CarRepository {
         this.cars = new ArrayList<>();
         this.cars.add(car1);
         this.cars.add(car2);
-    }
-
-    private Long getNextId() {
-        return this.cars.stream().map(Car::getId).max(Long::compare).map(id -> id + 1).orElse(1L);
+        this.idCounter += 2;
     }
 
     @Override
     public Car save(Car car) {
-        car.setId(getNextId());
+        car.setId(++idCounter);
         car.setCreateDate(LocalDateTime.now());
         car.setUpdateDate(LocalDateTime.now());
         this.cars.add(car);
