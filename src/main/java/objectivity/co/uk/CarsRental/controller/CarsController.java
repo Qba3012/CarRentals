@@ -2,20 +2,10 @@ package objectivity.co.uk.CarsRental.controller;
 
 import lombok.RequiredArgsConstructor;
 import objectivity.co.uk.CarsRental.business.CarService;
-import objectivity.co.uk.CarsRental.business.error.CarValidationException;
 import objectivity.co.uk.CarsRental.model.Car;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.bind.annotation.*;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,14 +17,9 @@ public class CarsController {
     private final CarService carService;
 
     @PostMapping
-    public ResponseEntity<Car> addCar(@RequestBody Car car) {
-        Car newCar = carService.addCar(car);
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(newCar.getId())
-                .toUri();
-        return ResponseEntity.created(location).body(newCar);
+    public ResponseEntity<List<Car>> addCars(@RequestBody List<Car> cars) {
+        List<Car> newCars = carService.addCars(cars);
+        return ResponseEntity.ok().body(newCars);
     }
 
     @GetMapping

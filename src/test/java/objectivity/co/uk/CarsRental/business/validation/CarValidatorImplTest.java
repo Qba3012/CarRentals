@@ -1,32 +1,27 @@
 package objectivity.co.uk.CarsRental.business.validation;
 
-import objectivity.co.uk.CarsRental.business.error.CarValidationException;
-import objectivity.co.uk.CarsRental.model.Car;
-import objectivity.co.uk.CarsRental.model.Status;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import objectivity.co.uk.CarsRental.business.error.MultipleCarValidationException;
+import objectivity.co.uk.CarsRental.business.error.SingleCarValidationException;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.List;
 
 import static java.util.Arrays.asList;
 import static objectivity.co.uk.CarsRental.business.error.CarError.*;
-import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static objectivity.co.uk.CarsRental.dummies.CarDummies.*;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.inOrder;
 
 @ExtendWith(MockitoExtension.class)
 class CarValidatorImplTest {
-
-    private final Car testCar = new Car(1L, "BMW", "E60", "BMW57S2021", new BigDecimal(30000), Status.AVAILABLE, Stream.of(
-            "Pasy bezpieczeństwa", "Kierunkowskazy", "Podświetlane logo").collect(Collectors.toSet()),
-            LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now());
 
     @InjectMocks
     CarValidatorImpl carValidator;
@@ -35,52 +30,131 @@ class CarValidatorImplTest {
     BannedCarsRepository bannedCarsRepository;
 
     @BeforeEach
-    public void setMockRepository() {
-        // given
-        testCar.setModel("E60");
-        testCar.setPurchaseDate(LocalDateTime.now());
-        testCar.setVin("BMW57S2021");
+    public void setUpMockRepository() {
         BDDMockito.given(bannedCarsRepository.getBannedModels()).willReturn(asList("Multipla", "Panda"));
     }
 
-    @Test
-    public void shouldNotThrowExceptionIfNoValidationErrors() {
-        // when // then
-        assertThatNoException().isThrownBy(() -> carValidator.validate(testCar));
+    @AfterEach
+    public void resetDummyData() {
+        resetDummnyData();
     }
 
-    @Test
-    public void shouldThrowExceptionIfCarModelIsBanned() {
-        // given
-        testCar.setModel("Panda");
+    @Nested
+    @DisplayName("Single car validation")
+    class CarValidatorImplTestForSingleCar {
 
-        // when // then
-        assertThatThrownBy(() -> carValidator.validate(testCar))
-                .isInstanceOf(CarValidationException.class)
-                .hasMessage(BANNED_MODEL.getDescription());
+        @Test
+        public void shouldNotThrowExceptionIfNoValidationErrors() {
+            // when // then
+            assertThatNoException().isThrownBy(() -> carValidator.validate(car1));
+        }
+
+        @Test
+        public void shouldThrowExceptionIfCarModelIsBanned() {
+            // given
+            car1.setModel("Panda");
+
+            // when // then
+            assertThatThrownBy(() -> carValidator.validate(car1))
+                    .isInstanceOf(SingleCarValidationException.class)
+                    .extracting("validationResults")
+                    .asList()
+                    .first()
+                    .extracting("errorCode", "message")
+                    .containsExactly(BANNED_MODEL.name(), BANNED_MODEL.getDescription());
+        }
+
+        @Test
+        public void shouldThrowExceptionIfPurchaseDateIsInFuture() {
+            // given
+            car1.setPurchaseDate(LocalDateTime.now().plusDays(1));
+
+            // when // then
+            assertThatThrownBy(() -> carValidator.validate(car1))
+                    .isInstanceOf(SingleCarValidationException.class)
+                    .extracting("validationResults")
+                    .asList()
+                    .first()
+                    .extracting("errorCode", "message")
+                    .containsExactly(WRONG_PURCHASE_DATE.name(), WRONG_PURCHASE_DATE.getDescription());
+        }
+
+        @Test
+        public void shouldThrowExceptionIfWrongVin() {
+            // given
+            car1.setVin("Definitely wrong vin");
+
+            // when // then
+            assertThatThrownBy(() -> carValidator.validate(car1))
+                    .isInstanceOf(SingleCarValidationException.class)
+                    .extracting("validationResults")
+                    .asList()
+                    .first()
+                    .extracting("errorCode", "message")
+                    .containsExactly(WRONG_VIN_FORMAT.name(), WRONG_VIN_FORMAT.getDescription());
+        }
     }
 
-    @Test
-    public void shouldThrowExceptionIfPurchaseDateIsInFuture() {
-        // given
-        testCar.setPurchaseDate(LocalDateTime.now().plusDays(1));
+    @Nested
+    @DisplayName("Multiple cars validation")
+    class CarValidatorImplTestForMultipleCars {
 
-        // when // then
-        assertThatThrownBy(() -> carValidator.validate(testCar))
-                .isInstanceOf(CarValidationException.class)
-                .hasMessage(WRONG_PURCHASE_DATE.getDescription());
-    }
+        @Test
+        public void shouldNotThrowExceptionIfNoValidationErrors() {
+            // when // then
+            assertThatNoException().isThrownBy(() -> carValidator.validate(carList));
+        }
 
+        @Test
+        public void shouldThrowExceptionIfCarModelIsBanned() {
+            // given
+            car1.setModel("Panda");
 
-    @Test
-    public void shouldThrowExceptionIfWrongVin() {
-        // given
-        testCar.setVin("Definitely wrong vin");
+            // when // then
+            assertThatThrownBy(() -> carValidator.validate(carList))
+                    .isInstanceOf(MultipleCarValidationException.class)
+                    .extracting("validationResults")
+                    .asInstanceOf(InstanceOfAssertFactories.map(Integer.class, List.class))
+                    .extractingByKey(0)
+                    .asList()
+                    .first()
+                    .extracting("errorCode", "message")
+                    .containsExactly(BANNED_MODEL.name(), BANNED_MODEL.getDescription());
+        }
 
-        // when // then
-        assertThatThrownBy(() -> carValidator.validate(testCar))
-                .isInstanceOf(CarValidationException.class)
-                .hasMessage(WRONG_VIN_FORMAT.getDescription());
+        @Test
+        public void shouldThrowExceptionIfPurchaseDateIsInFuture() {
+            // given
+            car1.setPurchaseDate(LocalDateTime.now().plusDays(1));
+
+            // when // then
+            assertThatThrownBy(() -> carValidator.validate(carList))
+                    .isInstanceOf(MultipleCarValidationException.class)
+                    .extracting("validationResults")
+                    .asInstanceOf(InstanceOfAssertFactories.map(Integer.class, List.class))
+                    .extractingByKey(0)
+                    .asList()
+                    .first()
+                    .extracting("errorCode", "message")
+                    .containsExactly(WRONG_PURCHASE_DATE.name(), WRONG_PURCHASE_DATE.getDescription());
+        }
+
+        @Test
+        public void shouldThrowExceptionIfWrongVin() {
+            // given
+            car1.setVin("Definitely wrong vin");
+
+            // when // then
+            assertThatThrownBy(() -> carValidator.validate(carList))
+                    .isInstanceOf(MultipleCarValidationException.class)
+                    .extracting("validationResults")
+                    .asInstanceOf(InstanceOfAssertFactories.map(Integer.class, List.class))
+                    .extractingByKey(0)
+                    .asList()
+                    .first()
+                    .extracting("errorCode", "message")
+                    .containsExactly(WRONG_VIN_FORMAT.name(), WRONG_VIN_FORMAT.getDescription());
+        }
     }
 
 }

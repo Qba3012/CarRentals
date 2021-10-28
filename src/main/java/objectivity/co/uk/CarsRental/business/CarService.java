@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CarService {
-    
-    Car addCar(Car car);
+
+    List<Car> addCars(List<Car> car);
 
     List<Car> getAllCars();
 

@@ -35,13 +35,24 @@ public class CarRepositoryImpl implements CarRepository {
         this.idCounter += 2;
     }
 
-    @Override
-    public Car save(Car car) {
+    private void setCarDataBeforeSaving(Car car) {
         car.setId(++idCounter);
         car.setCreateDate(LocalDateTime.now());
         car.setUpdateDate(LocalDateTime.now());
+    }
+
+    @Override
+    public Car save(Car car) {
+        setCarDataBeforeSaving(car);
         this.cars.add(car);
         return car;
+    }
+
+    @Override
+    public List<Car> save(List<Car> cars) {
+        cars.forEach(this::setCarDataBeforeSaving);
+        this.cars.addAll(cars);
+        return this.cars;
     }
 
     @Override

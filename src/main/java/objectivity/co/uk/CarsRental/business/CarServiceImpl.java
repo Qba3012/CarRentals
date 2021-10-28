@@ -16,9 +16,9 @@ public class CarServiceImpl implements CarService {
     private final CarValidator carValidator;
 
     @Override
-    public Car addCar(Car car) {
-        carValidator.validate(car);
-        return carRepository.save(car);
+    public List<Car> addCars(List<Car> cars) {
+        carValidator.validate(cars);
+        return carRepository.save(cars);
     }
 
     @Override

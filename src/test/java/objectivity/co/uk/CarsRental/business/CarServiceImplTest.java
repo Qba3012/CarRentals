@@ -1,10 +1,12 @@
 package objectivity.co.uk.CarsRental.business;
 
 import objectivity.co.uk.CarsRental.business.error.CarError;
-import objectivity.co.uk.CarsRental.business.error.CarValidationException;
+import objectivity.co.uk.CarsRental.business.error.CarValidationResult;
+import objectivity.co.uk.CarsRental.business.error.MultipleCarValidationException;
+import objectivity.co.uk.CarsRental.business.error.SingleCarValidationException;
 import objectivity.co.uk.CarsRental.business.validation.CarValidator;
 import objectivity.co.uk.CarsRental.model.Car;
-import objectivity.co.uk.CarsRental.model.Status;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -13,27 +15,20 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static objectivity.co.uk.CarsRental.dummies.CarDummies.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.inOrder;
 
 @ExtendWith(MockitoExtension.class)
 class CarServiceImplTest {
-
-    private final Car car1 = new Car(1L, "BMW", "E60", "BMW57S2021", new BigDecimal(30000), Status.AVAILABLE, Stream.of(
-            "Pasy bezpieczeństwa", "Kierunkowskazy", "Podświetlane logo").collect(Collectors.toSet()),
-            LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now());
-    private final Car car2 = new Car(2L, "BMW", "F10", "BMW56S2021", new BigDecimal(200000), Status.AVAILABLE, Stream.of(
-            "Pasy bezpieczeństwa", "Kierunkowskazy", "Podświetlane logo").collect(Collectors.toSet()),
-            LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now());
 
     @InjectMocks
     private CarServiceImpl carServiceImpl;
@@ -45,31 +40,39 @@ class CarServiceImplTest {
     private CarValidator carValidator;
 
     @Test
-    void shouldAddCarIfNoValidationErrors() {
+    void shouldAddCarsIfNoValidationErrors() {
         // given
-        BDDMockito.given(carRepository.save(car1)).willReturn(car1);
+        BDDMockito.given(carRepository.save(carList)).willReturn(carList);
 
         // when
-        Car actualCar = carServiceImpl.addCar(car1);
+        List<Car> actualCars = carServiceImpl.addCars(carList);
 
         // then
         InOrder inOrder = inOrder(carValidator, carRepository);
-        inOrder.verify(carValidator).validate(car1);
-        inOrder.verify(carRepository).save(car1);
-        assertThat(actualCar).usingRecursiveComparison().isEqualTo(car1);
+        inOrder.verify(carValidator).validate(carList);
+        inOrder.verify(carRepository).save(carList);
+        assertThat(actualCars).usingRecursiveComparison().isEqualTo(carList);
     }
 
     @Test
-    void shouldNotAddCarAndThrowExceptionIfValidationFails() {
+    void shouldNotAddCarsAndThrowExceptionIfValidationFails() {
         // given
-        BDDMockito.willThrow(new CarValidationException(CarError.WRONG_VIN_FORMAT)).given(carValidator).validate(car1);
+        List<CarValidationResult> validationResults = singletonList(new CarValidationResult(CarError.WRONG_VIN_FORMAT));
+        Map<Integer, List<CarValidationResult>> validationResponse = Map.of(0, validationResults);
+        BDDMockito.willThrow(new MultipleCarValidationException(validationResponse)).given(carValidator).validate(carList);
 
         // when // then
-        assertThatThrownBy(() -> carServiceImpl.addCar(car1))
-                .isInstanceOf(CarValidationException.class)
-                .hasMessage(CarError.WRONG_VIN_FORMAT.getDescription());
+        assertThatThrownBy(() -> carServiceImpl.addCars(carList))
+                .isInstanceOf(MultipleCarValidationException.class)
+                .extracting("validationResults")
+                .asInstanceOf(InstanceOfAssertFactories.map(Integer.class, List.class))
+                .extractingByKey(0)
+                .asList()
+                .first()
+                .extracting("errorCode", "message")
+                .containsExactly(CarError.WRONG_VIN_FORMAT.name(), CarError.WRONG_VIN_FORMAT.getDescription());
         InOrder inOrder = inOrder(carValidator, carRepository);
-        inOrder.verify(carValidator).validate(car1);
+        inOrder.verify(carValidator).validate(carList);
         inOrder.verifyNoMoreInteractions();
     }
 
@@ -116,12 +119,17 @@ class CarServiceImplTest {
     @Test
     void shouldNotUpdateCarAndThrowExceptionIfValidationFails() {
         // given
-        BDDMockito.willThrow(new CarValidationException(CarError.WRONG_VIN_FORMAT)).given(carValidator).validate(car1);
+        List<CarValidationResult> validationResults = singletonList(new CarValidationResult(CarError.WRONG_VIN_FORMAT));
+        BDDMockito.willThrow(new SingleCarValidationException(validationResults)).given(carValidator).validate(car1);
 
         // when // then
         assertThatThrownBy(() -> carServiceImpl.updateCar(1L, car1))
-                .isInstanceOf(CarValidationException.class)
-                .hasMessage(CarError.WRONG_VIN_FORMAT.getDescription());
+                .isInstanceOf(SingleCarValidationException.class)
+                .extracting("validationResults")
+                .asList()
+                .first()
+                .extracting("errorCode", "message")
+                .containsExactly(CarError.WRONG_VIN_FORMAT.name(), CarError.WRONG_VIN_FORMAT.getDescription());
         InOrder inOrder = inOrder(carValidator, carRepository);
         inOrder.verify(carValidator).validate(car1);
         inOrder.verifyNoMoreInteractions();

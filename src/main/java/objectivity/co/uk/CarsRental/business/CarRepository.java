@@ -8,6 +8,8 @@ import java.util.Optional;
 public interface CarRepository {
     Car save(Car car);
 
+    List<Car> save(List<Car> car);
+
     List<Car> findAll();
 
     Optional<Car> getById(Long id);
