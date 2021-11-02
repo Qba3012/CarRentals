@@ -1,12 +1,6 @@
 package objectivity.co.uk.CarsRental.business;
 
-import objectivity.co.uk.CarsRental.business.error.CarError;
-import objectivity.co.uk.CarsRental.business.error.CarValidationResult;
-import objectivity.co.uk.CarsRental.business.error.MultipleCarValidationException;
-import objectivity.co.uk.CarsRental.business.error.SingleCarValidationException;
-import objectivity.co.uk.CarsRental.business.validation.CarValidator;
 import objectivity.co.uk.CarsRental.model.Car;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -15,16 +9,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Validator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static objectivity.co.uk.CarsRental.dummies.CarDummies.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.inOrder;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,9 +28,6 @@ class CarServiceImplTest {
     @Mock
     private CarRepository carRepository;
 
-    @Mock
-    private CarValidator carValidator;
-
     @Test
     void shouldAddCarsIfNoValidationErrors() {
         // given
@@ -48,32 +37,7 @@ class CarServiceImplTest {
         List<Car> actualCars = carServiceImpl.addCars(carList);
 
         // then
-        InOrder inOrder = inOrder(carValidator, carRepository);
-        inOrder.verify(carValidator).validate(carList);
-        inOrder.verify(carRepository).save(carList);
         assertThat(actualCars).usingRecursiveComparison().isEqualTo(carList);
-    }
-
-    @Test
-    void shouldNotAddCarsAndThrowExceptionIfValidationFails() {
-        // given
-        List<CarValidationResult> validationResults = singletonList(new CarValidationResult(CarError.WRONG_VIN_FORMAT));
-        Map<Integer, List<CarValidationResult>> validationResponse = Map.of(0, validationResults);
-        BDDMockito.willThrow(new MultipleCarValidationException(validationResponse)).given(carValidator).validate(carList);
-
-        // when // then
-        assertThatThrownBy(() -> carServiceImpl.addCars(carList))
-                .isInstanceOf(MultipleCarValidationException.class)
-                .extracting("validationResults")
-                .asInstanceOf(InstanceOfAssertFactories.map(Integer.class, List.class))
-                .extractingByKey(0)
-                .asList()
-                .first()
-                .extracting("errorCode", "message")
-                .containsExactly(CarError.WRONG_VIN_FORMAT.name(), CarError.WRONG_VIN_FORMAT.getDescription());
-        InOrder inOrder = inOrder(carValidator, carRepository);
-        inOrder.verify(carValidator).validate(carList);
-        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
@@ -110,29 +74,7 @@ class CarServiceImplTest {
         Car actualCar = carServiceImpl.updateCar(1L, car1);
 
         // then
-        InOrder inOrder = inOrder(carValidator, carRepository);
-        inOrder.verify(carValidator).validate(car1);
-        inOrder.verify(carRepository).update(1L, car1);
         assertThat(actualCar).isEqualTo(car1);
-    }
-
-    @Test
-    void shouldNotUpdateCarAndThrowExceptionIfValidationFails() {
-        // given
-        List<CarValidationResult> validationResults = singletonList(new CarValidationResult(CarError.WRONG_VIN_FORMAT));
-        BDDMockito.willThrow(new SingleCarValidationException(validationResults)).given(carValidator).validate(car1);
-
-        // when // then
-        assertThatThrownBy(() -> carServiceImpl.updateCar(1L, car1))
-                .isInstanceOf(SingleCarValidationException.class)
-                .extracting("validationResults")
-                .asList()
-                .first()
-                .extracting("errorCode", "message")
-                .containsExactly(CarError.WRONG_VIN_FORMAT.name(), CarError.WRONG_VIN_FORMAT.getDescription());
-        InOrder inOrder = inOrder(carValidator, carRepository);
-        inOrder.verify(carValidator).validate(car1);
-        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
