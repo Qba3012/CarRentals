@@ -3,7 +3,6 @@ package objectivity.co.uk.CarsRental.repository;
 import objectivity.co.uk.CarsRental.business.CarRepository;
 import objectivity.co.uk.CarsRental.model.Car;
 import objectivity.co.uk.CarsRental.model.Status;
-import org.springframework.stereotype.Repository;
 
 import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
@@ -11,10 +10,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-@Repository
+//@Repository
 public class CarRepositoryImpl implements CarRepository {
 
     private List<Car> cars;
@@ -23,11 +20,9 @@ public class CarRepositoryImpl implements CarRepository {
 
     @PostConstruct
     private void initMockData() {
-        Car car1 = new Car(1L, "BMW", "E60", "BMW57S2021", new BigDecimal(30000), Status.AVAILABLE, Stream.of("Pasy " +
-                "bezpieczeństwa", "Kierunkowskazy", "Podświetlane logo").collect(Collectors.toSet()),
+        Car car1 = new Car(1L, "BMW", "E60", "BMW57S2021", new BigDecimal(30000), Status.AVAILABLE,
                 LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now());
-        Car car2 = new Car(2L, "BMW", "F10", "BMW56S2021", new BigDecimal(200000), Status.AVAILABLE, Stream.of("Pasy " +
-                "bezpieczeństwa", "Kierunkowskazy", "Podświetlane logo").collect(Collectors.toSet()),
+        Car car2 = new Car(2L, "BMW", "F10", "BMW56S2021", new BigDecimal(200000), Status.AVAILABLE,
                 LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now());
         this.cars = new ArrayList<>();
         this.cars.add(car1);
@@ -79,7 +74,6 @@ public class CarRepositoryImpl implements CarRepository {
             existingCar.setModel(car.getModel());
             existingCar.setStatus(car.getStatus());
             existingCar.setVin(car.getVin());
-            existingCar.setFeatures(car.getFeatures());
             existingCar.setPrice(car.getPrice());
             existingCar.setUpdateDate(LocalDateTime.now());
             existingCar.setPurchaseDate(car.getPurchaseDate());
